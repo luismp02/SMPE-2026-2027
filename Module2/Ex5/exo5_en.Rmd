@@ -131,7 +131,7 @@ from all angles in order to to explain what's wrong.
 * The main issue seems to be a selection bias: "Flights without incidents do not provide any information" It's not true at all for this problematic since all the observations will be correlated with malfunction, if we eliminate all flights with no malfunction, the question changes (instead of a failure prob, a prob of more than one failure against just one). THe flights without malfunction  should be taken in account.
 * Model pvalue, is high, because they selected the observations according to the result that they are trying to explain.
 * Prediction on 31°F, it is largely outside the observed range, quite a big extrapolation for the reduced data?.
-* THe risk probabailty seems weird: if the question is, given a temperature, which is the prob of an O-ring malfunctioning, why to calculate total malfunction/total O-rings? An average all-time risk independent from variables is not informative at all for our question, the main problem is answering a question (which is the risk with my conditions) with the answer to another question (which is the historical rate of failure).
+* THe risk probabailty seems weird: if the question is, given a temperature, which is the prob of an O-ring malfunctioning, why to calculate total malfunction/total O-rings? An average all-time risk independent from variables is not informative at all for our question, the main problem is answering a question (which is the risk with my conditions) with the answer to another question (which is the overall rate of failure).
 
 ## My analysis:
 
@@ -141,6 +141,7 @@ First plot all the data
 data = read.csv("shuttle.csv",header=T)
 plot(data = data, Malfunction/Count ~ Temperature, ylim = c(0,1))
 ```
+
 Now we see something interesting, malfunction=0 is observed with higher temperatures. We can follow with a regression. Lower than 66, no malfunction=0 is observed
 
 ```{r}
@@ -153,6 +154,7 @@ logistic_reg = glm(
 
 summary(logistic_reg)
 ```
+
 The estimated effect of temperature is now negative (-0.1156) and statistically significant (p=0.0140). This relation was hidden before.
 We can now use the fitted logistic model to estimate the probability of malfunction over a range of temperatures and compare the predicted curve with the observed data.
 
@@ -168,6 +170,7 @@ rmv = predict(
 plot(tempv, rmv, type = "l", ylim = c(0,1))
 points(data = data, Malfunction/Count ~ Temperature) 
 ```
+
 We can see a strong increase in malfunction probability at lower temperatures, with the estimated risk rising  below the observed range
 Let's do the prediction, this time instead of using the overall failure rate, we  estimate the probability that answers our actual question: the probability of malfunction specifically at 31°F.
 
@@ -180,6 +183,7 @@ p31 = predict(
 
 p31
 ```
+
 We have a prob of 0.81 for one O-ring malfunction (I am not an expert on engineering, but definitely not launching). We can additionally get the risk of malfunction of at least one of the three pairs (primary/secondary)
 
 ```{r}
@@ -195,6 +199,7 @@ Quite risky. I could finish here, but just in case we are missing something, let
 data = read.csv("shuttle.csv",header=T)
 plot(data = data, Malfunction/Count ~ Pressure, ylim = c(0,1))
 ```
+
 High pressure seems problematic here, I will repeat the same analysis with this variable. 
 
 ```{r}
@@ -207,6 +212,7 @@ logistic_reg_pressure = glm(
 
 summary(logistic_reg_pressure)
 ```
+
 We can observe a slightly positive association (0.010189) with low significance (p=0.17846) of pressure on malfunction. This does not mean that malfunction is absolutely independent, but the data does not provide enough evidence that pressure is an important predictor, so we stand with temperature as the important factor.
 
 
