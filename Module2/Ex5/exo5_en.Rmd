@@ -1,0 +1,218 @@
+---
+title: "Analysis of the risk of failure of the O-rings on the Challenger shuttle"
+author: "Arnaud Legrand"
+date: "28 juin 2018"
+output: html_document
+---
+
+On January 27, 1986, the day before the takeoff of the shuttle _Challenger_, had
+a three-hour teleconference was held between 
+Morton Thiokol (the manufacturer of one of the engines) and NASA. The
+discussion focused on the consequences of the
+temperature at take-off of 31°F (just below
+0°C) for the success of the flight and in particular on the performance of the
+O-rings used in the engines. Indeed, no test
+had been performed at this temperature.
+
+The following study takes up some of the analyses carried out that
+night with the objective of assessing the potential influence of
+the temperature and pressure to which the O-rings are subjected
+on their probability of malfunction. Our starting point is 
+the results of the experiments carried out by NASA engineers
+during the six years preceding the launch of the shuttle
+Challenger.
+
+# Loading the data
+We start by loading this data:
+
+```{r}
+data = read.csv("shuttle.csv",header=T)
+data
+```
+
+The data set shows us the date of each test, the number of O-rings
+(there are 6 on the main launcher), the
+temperature (in Fahrenheit) and pressure (in psi), and finally the
+number of identified malfunctions.
+
+# Graphical inspection
+Flights without incidents do not provide any information
+on the influence of temperature or pressure on malfunction.
+We thus focus on the experiments in which at least one O-ring was defective.
+
+```{r}
+data = data[data$Malfunction>0,]
+data
+```
+
+We have a high temperature variability but
+the pressure is almost always 200, which should
+simplify the analysis.
+
+How does the frequency of failure vary with temperature?
+```{r}
+plot(data=data, Malfunction/Count ~ Temperature, ylim=c(0,1))
+```
+
+At first glance, the dependence does not look very important, but let's try to
+estimate the impact of temperature $t$ on the probability of O-ring malfunction.
+
+# Estimation of the temperature influence
+
+Suppose that each of the six O-rings is damaged with the same
+probability and independently of the others and that this probability
+depends only on the temperature. If $p(t)$ is this probability, the
+number $D$ of malfunctioning O-rings during a flight at
+temperature $t$ follows a binomial law with parameters $n=6$ and
+$p=p(t)$. To link $p(t)$ to $t$, we will therefore perform a
+logistic regression.
+
+```{r}
+logistic_reg = glm(data=data, Malfunction/Count ~ Temperature, weights=Count, 
+                   family=binomial(link='logit'))
+summary(logistic_reg)
+```
+
+The most likely estimator of the temperature parameter is 0.001416
+and the standard error of this estimator is 0.049, in other words we
+cannot distinguish any particular impact and we must take our
+estimates with caution.
+
+# Estimation of the probability of O-ring malfunction
+The expected temperature on the take-off day is 31°F. Let's try to
+estimate the probability of O-ring malfunction at
+this temperature from the model we just built:
+
+```{r}
+# shuttle=shuttle[shuttle$r!=0,] 
+tempv = seq(from=30, to=90, by = .5)
+rmv <- predict(logistic_reg,list(Temperature=tempv),type="response")
+plot(tempv,rmv,type="l",ylim=c(0,1))
+points(data=data, Malfunction/Count ~ Temperature)
+```
+
+As expected from the initial data, the
+temperature has no significant impact on the probability of failure of the
+O-rings. It will be about 0.2, as in the tests
+where we had a failure of at least one joint. Let's get back to the initial dataset to estimate the probability of failure:
+
+```{r}
+data_full = read.csv("shuttle.csv",header=T)
+sum(data_full$Malfunction)/sum(data_full$Count)
+```
+
+This probability is thus about $p=0.065$. Knowing that there is
+a primary and a secondary O-ring on each of the three parts of the
+launcher, the probability of failure of both joints of a launcher
+is $p^2 \approx 0.00425$. The probability of failure of any one of the
+launchers is $1-(1-p^2)^3 \approx 1.2%$.  That would really be
+bad luck.... Everything is under control, so the takeoff can happen
+tomorrow as planned.
+
+But the next day, the Challenger shuttle exploded and took away
+with her the seven crew members. The public was shocked and in
+the subsequent investigation, the reliability of the
+O-rings was questioned. Beyond the internal communication problems
+of NASA, which have a lot to do with this fiasco, the previous analysis
+includes (at least) a small problem.... Can you find it?
+You are free to modify this analysis and to look at this dataset
+from all angles in order to to explain what's wrong.
+
+# Exercice: modify previous analysis
+
+## Overview and starting point
+
+* Dataset: 23 flights with O-rings (count), temperature, pressure, malfunctions.
+* First analysis: gets the flights with malfunctions,, graphs malfunction against temperature, adjusts logistic regression, predicts risk, goes back to the full dataset for a global malfunction prob.
+* Clue: there is (at least) one global problem. The starting question involves the influence of a variable (or two) on malfunction.
+
+## Personal observations
+
+* The main issue seems to be a selection bias: "Flights without incidents do not provide any information" It's not true at all for this problematic since all the observations will be correlated with malfunction, if we eliminate all flights with no malfunction, the question changes (instead of a failure prob, a prob of more than one failure against just one). THe flights without malfunction  should be taken in account.
+* Model pvalue, is high, because they selected the observations according to the result that they are trying to explain.
+* Prediction on 31°F, it is largely outside the observed range, quite a big extrapolation for the reduced data?.
+* THe risk probabailty seems weird: if the question is, given a temperature, which is the prob of an O-ring malfunctioning, why to calculate total malfunction/total O-rings? An average all-time risk independent from variables is not informative at all for our question, the main problem is answering a question (which is the risk with my conditions) with the answer to another question (which is the historical rate of failure).
+
+## My analysis:
+
+First plot all the data
+
+```{r}
+data = read.csv("shuttle.csv",header=T)
+plot(data = data, Malfunction/Count ~ Temperature, ylim = c(0,1))
+```
+Now we see something interesting, malfunction=0 is observed with higher temperatures. We can follow with a regression. Lower than 66, no malfunction=0 is observed
+
+```{r}
+logistic_reg = glm(
+  data = data,
+  Malfunction/Count ~ Temperature,
+  weights = Count,
+  family = binomial(link = "logit")
+)
+
+summary(logistic_reg)
+```
+The estimated effect of temperature is now negative (-0.1156) and statistically significant (p=0.0140). This relation was hidden before.
+We can now use the fitted logistic model to estimate the probability of malfunction over a range of temperatures and compare the predicted curve with the observed data.
+
+```{r}
+tempv = seq(from = 30, to = 90, by = 0.5)
+
+rmv = predict(
+  logistic_reg,
+  newdata = data.frame(Temperature = tempv),
+  type = "response"
+)
+
+plot(tempv, rmv, type = "l", ylim = c(0,1))
+points(data = data, Malfunction/Count ~ Temperature) 
+```
+We can see a strong increase in malfunction probability at lower temperatures, with the estimated risk rising  below the observed range
+Let's do the prediction, this time instead of using the overall failure rate, we  estimate the probability that answers our actual question: the probability of malfunction specifically at 31°F.
+
+```{r}
+p31 = predict(
+  logistic_reg,
+  newdata = data.frame(Temperature = 31),
+  type = "response"
+)
+
+p31
+```
+We have a prob of 0.81 for one O-ring malfunction (I am not an expert on engineering, but definitely not launching). We can additionally get the risk of malfunction of at least one of the three pairs (primary/secondary)
+
+```{r}
+risk = 1 - (1 - p31^2)^3
+risk
+```
+
+Quite risky. I could finish here, but just in case we are missing something, let's check the pressure variable.
+
+
+
+```{r}
+data = read.csv("shuttle.csv",header=T)
+plot(data = data, Malfunction/Count ~ Pressure, ylim = c(0,1))
+```
+High pressure seems problematic here, I will repeat the same analysis with this variable. 
+
+```{r}
+logistic_reg_pressure = glm(
+  data = data,
+  Malfunction/Count ~ Pressure,
+  weights = Count,
+  family = binomial(link = "logit")
+)
+
+summary(logistic_reg_pressure)
+```
+We can observe a slightly positive association (0.010189) with low significance (p=0.17846) of pressure on malfunction. This does not mean that malfunction is absolutely independent, but the data does not provide enough evidence that pressure is an important predictor, so we stand with temperature as the important factor.
+
+
+
+
+
+
+
+
