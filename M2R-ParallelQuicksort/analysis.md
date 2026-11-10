@@ -20,3 +20,9 @@
 - Test more sizes (intermediate and above 10 million.)
 - Run more repetitions per size.
 - Compare execution times and speedups, with confidence intervals.
+
+### Preliminary results
+
+- In the new experiment, parallel quicksort has a median speedup above 1 from 2.5 million elements onward.
+- Parallel is faster in many runs, but not in all of them.
+- Results differ from the first experiment, where mean speedup remained below 1 for all tested sizes.
