@@ -25,4 +25,7 @@
 
 - In the new experiment, parallel quicksort has a median speedup above 1 from 2.5 million elements onward.
 - Parallel is faster in many runs, but not in all of them.
-- Results differ from the first experiment, where mean speedup remained below 1 for all tested sizes.
+- Results differ from the first experiment, where mean speedup remained below 1 for all tested sizes
+
+
+#### Next step (TO DO): separate the experiment (sizes // random runs order) in order to know which is the source of results variability. Maybe randomising the order explains the difference, maybe it was due to changing the sample size, we cannot conclude with one experiment doing every change at the same time 
