@@ -1,7 +1,8 @@
 M2R-ParallelQuicksort
 =====================
 
-This small project aims at teaching 2nd year master students how to
-improve their experimental methodology.
+* analysis.md contains the main notes on the the different updates, observations and steps.
 
-The [journal](journal.org) contains all information and experimental reports.
+* The current analysis (not fully completed) is updated in the .rmd notebook, you should be able to execute everything from this repo, but the current pdf is also shared.
+
+* The new bash scripts are added into the original script folder 
